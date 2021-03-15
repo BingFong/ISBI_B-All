@@ -6,9 +6,12 @@ import torch
 import torch.nn as nn
 from torch.utils import model_zoo
 
-from utils import Flatten
+# from utils import Flatten
 
-
+class Flatten(nn.Module):
+    def forward(self, x):
+        return x.view(x.size(0), -1)
+    
 class SEModule(nn.Module):
     def __init__(self, channels, reduction):
         super(SEModule, self).__init__()
@@ -178,6 +181,6 @@ class SENet(nn.Module):
 def get_model():
     model = SENet(SEResNeXtBottleneck, [3, 4, 6, 3], groups=32, reduction=16, inplanes=64,
                   downsample_kernel_size=1, downsample_padding=0)
-    checkpoint = model_zoo.load_url('http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth')
+    # checkpoint = model_zoo.load_url('http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth')
     model.load_state_dict(torch.load(r'se_resnext50_32x4d\se_resnext50_32x4d-a260b3a4.pth'), strict=False)
     return model
