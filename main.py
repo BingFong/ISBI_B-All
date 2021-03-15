@@ -6,6 +6,7 @@ import argparse
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import torch
 import torch.optim as optim
@@ -13,6 +14,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+def saving_loss_and_figure(loss_batchs, loss_amount, mode):
+    #saving averageg loss depands on which mode
+    folder = os.path.join(args.folder, mode)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    
+    averaged_loss = sum(loss_batchs) / loss_amount
+    dict = {'averaged_train_loss': [averaged_loss]}
+    df = pd.DataFrame(dict)
+    df.to_csv(folder + '/' + mode + '.csv') #saving loss as csv
+    
+    print('\n' + 'averaged {0} loss: {1}'.format(mode, averaged_loss))
+    
+    plt.savefig(folder + '/' + 'loss') #saving loss plot
+    
+    
 
 def train_valid(args):
 
@@ -39,28 +57,35 @@ def train_valid(args):
     batchs = int(len(train_label)/args.batch_size) + 1
     figure = plt_loss(batchs) #建立畫布
 
-    loss_train = []
+    
     
     model.train()
-    for data, label in tqdm(train_loader):
-        #traing flow
-        data = data.to(args.device)
-        label.to(args.device)
-        label = torch.unsqueeze(label, 1)
-        label = label.type(torch.cuda.FloatTensor)
-        
-        optimizer.zero_grad()
-        outputs = model(data)
-        
-        loss = torch.nn.BCEWithLogitsLoss()
-        loss = loss(outputs, label)
-        loss_train.append(loss.item())
-        figure.update(round(loss.item(), 7)) #dynamic drawing
-        loss.backward()
-        
-        optimizer.step()
+    for i in range(5):
+        loss_train = []
+        for data, label in tqdm(train_loader):
+            #traing flow
+            data = data.to(args.device)
+            label.to(args.device)
+            label = torch.unsqueeze(label, 1)
+            label = label.type(torch.cuda.FloatTensor)
+            
+            optimizer.zero_grad()
+            outputs = model(data)
+            
+            loss = torch.nn.BCEWithLogitsLoss()
+            loss = loss(outputs, label)
+            figure.update(round(loss.item(), 7)) #dynamic drawing
+            
+            loss_train.append(loss.item() * list(label.size())[0])
+            
+            loss.backward()
+            optimizer.step()
     
-    plt.savefig(os.path.join(args.folder, 'loss')) #saving loss plot
+    saving_loss_and_figure(loss_train, len(train_label), 'train')
+    
+    
+    print('Finished Training')
+    # 
     
     # model.eval()
     # for data, label in tqdm(valid_loader):
@@ -84,10 +109,10 @@ def train_valid(args):
         # loss.backward()
         
      #    optimizer.step()
-    print('Finished Training')   
-    return loss_train#, loss_valid
+       
     
 class plt_loss():
+    #建立畫布，x軸值設為總batch數
     def __init__(self, batchs):
         self.x = [0]
         self.y = [0]
@@ -103,6 +128,7 @@ class plt_loss():
         plt.ylabel("loss", fontsize=18)
         
     def update(self, loss):
+        #更新並重繪
         self.y.append(loss)
         self.line1.set_xdata(list(range(len(self.y))))
         self.line1.set_ydata(self.y)
@@ -130,9 +156,10 @@ if __name__ == '__main__':
     args.folder = folder
     print(args)
     
-    loss_train = train_valid(args)
+    train_valid(args)
     
     
+    #讀資料及是否random
     #動態loss
     #統計pred正確與否
     #加入epoch -> valid ->混淆矩陣 ->儲存model 
