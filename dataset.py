@@ -47,39 +47,37 @@ def valid_transform():
 
 def train_data():
     #return training set directory list and labels
-    
     current_path = os.path.dirname(os.path.realpath(__file__))
     data_root = r'data'
     train_list = glob.glob(os.path.join(
-        current_path, data_root, 'fold_0', '*', '*.bmp'))
+        current_path, data_root, '*', '*', '*.bmp'))
     
     label = []
+    count = 0
     for data in train_list:
        data = Path(data)
        parts = data.parts
        if parts[5] == 'all':
            label.append(1)
+           count += 1
        else:
            label.append(0)
-    
     return train_list, label
 
 def valid_data():
-    #return validating set directory list and labels
-    
+    #return directory list of validating set and labels
     current_path = os.path.dirname(os.path.realpath(__file__))
     data_root = r'data'
-    valid_list = glob.glob(os.path.join(current_path, data_root, 'phase2', '*.bmp'))
-    phase2 = os.path.join(current_path, data_root, 'phase2.csv')
+    valid_dir = os.path.join(current_path, data_root, 'phase2')
     
-    
-    df = pd.read_csv(phase2)
-    label = df['labels'].values.tolist()
+    phase2_csv = os.path.join(current_path, data_root, 'phase2.csv')
+    df = pd.read_csv(phase2_csv)
+    label = df['labels'].values.tolist() #labels
+    valid_list = (valid_dir + '/' + df['new_names'].values).tolist() #directory list of validating set
     
     return valid_list, label
     
 if __name__ == '__main__':
-    
     train_list, train_label = train_data()
     train_set = get_data(data_list = train_list, label = train_label, transform = train_transform())
     train_loader = DataLoader(
@@ -90,8 +88,3 @@ if __name__ == '__main__':
     valid_loader = DataLoader(
         dataset=valid_set, batch_size=10, shuffle=False, num_workers=0) #shuffle=False
     
-    # for i, data in enumerate(train_loader, 0):
-    #     print(i)
-    #     print(data[1].shape)
-        
-        
